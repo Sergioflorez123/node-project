@@ -4,6 +4,7 @@ import SearchForm from './components/SearchForm';
 import './App.css';
 import axios from 'axios';
 import VisualizarTiempos from './components/VisualizarTiempos';
+import FichaPersonal from './components/FichaPersonal';
 
 function App() {
   const [timeAxios, setTimeAxios] = useState(parseFloat(localStorage.getItem('axiosTime') ?? 0));
@@ -13,6 +14,7 @@ function App() {
   const [country, setCountry] = useState('US');
   const [isLoading, setIsLoading] = useState(false);
   const [loadingType, setLoadingType] = useState('');
+  const [showFicha, setShowFicha] = useState(false); // 👈 NUEVO
 
   const url = `https://randomuser.me/api/?results=12&gender=${gender}&nat=${country}`;
 
@@ -30,7 +32,7 @@ function App() {
     } finally {
       setTimeout(() => setIsLoading(false), 500);
     }
-  }, [gender, country, isLoading, url]);
+  }, [isLoading, url]);
 
   const findPeopleFetch = useCallback(async () => {
     if (isLoading) return;
@@ -48,7 +50,7 @@ function App() {
     } finally {
       setTimeout(() => setIsLoading(false), 500);
     }
-  }, [gender, country, isLoading, url]);
+  }, [isLoading, url]);
 
   const compareRequests = useCallback(async () => {
     if (isLoading) return;
@@ -83,10 +85,18 @@ function App() {
     } finally {
       setTimeout(() => setIsLoading(false), 500);
     }
-  }, [gender, country, isLoading, url]);
+  }, [isLoading, url]);
 
   const handleGender = (event) => setGender(event.target.value);
   const handleCountry = (event) => setCountry(event.target.value);
+
+  // 👉 NUEVA FUNCIÓN mostrarFicha
+  const mostrarFicha = () => {
+    setShowFicha(true);
+    setPeople({ axios: [], fetch: [] });
+    setIsLoading(false);
+    setLoadingType('');
+  };
 
   return (
     <div className="App">
@@ -99,35 +109,45 @@ function App() {
         <button onClick={findPeopleFetch} disabled={isLoading} className="btn">
           {isLoading && loadingType === 'fetch' ? "Cargando..." : "Buscar con Fetch"}
         </button>
+        <button onClick={mostrarFicha} disabled={isLoading} className="btn">
+          Ficha Personal
+        </button>
         <button onClick={compareRequests} disabled={isLoading} className="btn">
           {isLoading && loadingType === 'compare' ? "Cargando..." : "Comparar Axios vs Fetch"}
         </button>
       </div>
+
       <VisualizarTiempos timeAxios={timeAxios} timeFetch={timeFetch} />
-      <div className="App-results">
-        <div className="result-section">
-          <h2>Resultados con Axios</h2>
-          {isLoading && loadingType === 'axios' && <p>Cargando datos...</p>}
-          <div className="people-grid">
-            {people.axios.length > 0 ? (
-              people.axios.map(person => <Person key={person.login.uuid} person={person} />)
-            ) : (
-              !isLoading && <p>No hay resultados</p>
-            )}
+
+      {/* 👉 RENDERIZADO CONDICIONAL */}
+      {showFicha ? (
+        <FichaPersonal />
+      ) : (
+        <div className="App-results">
+          <div className="result-section">
+            <h2>Resultados con Axios</h2>
+            {isLoading && loadingType === 'axios' && <p>Cargando datos...</p>}
+            <div className="people-grid">
+              {people.axios.length > 0 ? (
+                people.axios.map(person => <Person key={person.login.uuid} person={person} />)
+              ) : (
+                !isLoading && <p>No hay resultados</p>
+              )}
+            </div>
+          </div>
+          <div className="result-section">
+            <h2>Resultados con Fetch</h2>
+            {isLoading && loadingType === 'fetch' && <p>Cargando datos...</p>}
+            <div className="people-grid">
+              {people.fetch.length > 0 ? (
+                people.fetch.map(person => <Person key={person.login.uuid} person={person} />)
+              ) : (
+                !isLoading && <p>No hay resultados</p>
+              )}
+            </div>
           </div>
         </div>
-        <div className="result-section">
-          <h2>Resultados con Fetch</h2>
-          {isLoading && loadingType === 'fetch' && <p>Cargando datos...</p>}
-          <div className="people-grid">
-            {people.fetch.length > 0 ? (
-              people.fetch.map(person => <Person key={person.login.uuid} person={person} />)
-            ) : (
-              !isLoading && <p>No hay resultados</p>
-            )}
-          </div>
-        </div>
-      </div>
+      )}
     </div>
   );
 }
